@@ -88,9 +88,15 @@ plt.show()
 # set new_daily_demand to zero on these dates (2023-07-04, 2023-12-25)
 dates_to_zero = pd.to_datetime(['2023/07/04', '2023/12/25'])
 
-# not sure why this code throws an error...
 for date in dates_to_zero:
     df.loc[df['order_date'] == date, 'new_daily_demand'] = 0
+
+# round demand values to integers
+df[['daily_demand', 'new_daily_demand']] = df[['daily_demand', 'new_daily_demand']].round(0)
+
+# save dataset
+df.to_csv('demand_data.csv')
+df.to_pickle('demand_data.pkl')
 
 ############ LEAD TIME #################
 
@@ -131,3 +137,6 @@ lt = pd.concat(dfs)
 
 lt['mean_lead_time'] = [10, 10, 20, 30, 20, 20, 5, 20, 30, 30, 30, 10]
 lt['std_lead_time'] = [3, 1, 3, 4, 3, 1, 3, 4, 3, 1, 3, 4]
+
+# save dataset
+

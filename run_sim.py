@@ -1,0 +1,100 @@
+import numpy as np
+
+
+# get data from 'generate_data.py'
+# subset to 1 SKU-DC combo
+demand_data = df[(df['item_num']==10000) & (df['dc']=='A')]
+
+# make sure date is set as index
+demand_data = demand_data.reset_index(drop=True)
+
+# add new placeholder columns
+'''
+il         -> onhand_il
+in_transit -> intransit_il
+total_il   -> total_il
+supply     -> delivery
+'''
+demand_data['on_hand_il'] = 0
+demand_data['in_transit_il'] = 0
+demand_data['total_il'] = 0
+demand_data['delivery'] = 0
+
+# set the first day of inventory
+demand_data.loc[demand_data.index[0], 'on_hand_il'] = 11111
+
+
+'''
+# R-style version of function 
+def proj_inv_in_transit(demand_data):
+    lead_time = 10
+    reorder_pt = 8000*5
+    reorder_qty = 8000*10
+
+# index starts at 0, so 1 is the second row
+    for i in range(1, len(demand_data)):
+
+        # calculate on-hand inventory, min floor inventory level to 0
+        demand_data['on_hand_il'][i] = max(0,
+                                   demand_data['delivery'][i] + demand_data['on_hand_il'][i - 1] - demand_data['daily_demand'][i])
+
+        # calculate total inventory (on hand and in transit)
+        demand_data['total_il'][i] = demand_data['on_hand_il'][i] + demand_data['in_transit_il'][i]
+
+        # trigger order if total inventory <= reorder point
+        if demand_data['total_il'][i] <= reorder_pt:
+
+            # supply arrives lead time days later (if within simulation time period)
+            if (i + lead_time < len(demand_data)):
+                # add supply
+                demand_data['delivery'][i + lead_time] = demand_data['delivery'][i + lead_time] + reorder_qty
+
+                # add in_transit inventory to each day (i+1) through (i + LT - 1)
+                demand_data['in_transit_il'][i + 1: i + lead_time] = demand_data['in_transit_il'][
+                                                                  i + 1: i + lead_time] + reorder_qty
+
+    return demand_data
+
+# returns expected results BUT
+# throws a SettingWithCopyWarning
+df2 = proj_inv_in_transit(demand_data)
+'''
+
+# Pandas-style version of function with .at method
+def proj_inv_in_transitv2(demand_data):
+    lead_time = 10
+    reorder_pt = 8000*5
+    reorder_qty = 8000*10
+
+# index starts at 0, so 1 is the second row
+    for i in range(1, len(demand_data)):
+
+        # calculate on-hand inventory, min floor inventory level to 0
+        demand_data.at[i, 'on_hand_il'] = max(0,
+                                   demand_data.at[i, 'delivery'] + demand_data.at[i -1, 'on_hand_il'] - demand_data.at[i, 'daily_demand'])
+
+        # calculate total inventory (on hand and in transit)
+        demand_data.at[i, 'total_il'] = demand_data.at[i, 'on_hand_il'] + demand_data.at[i, 'in_transit_il']
+
+        # trigger order if total inventory <= reorder point
+        if demand_data.at[i, 'total_il'] <= reorder_pt:
+
+            # supply arrives lead time days later (if within simulation time period)
+            if (i + lead_time < len(demand_data)):
+                # add supply
+                demand_data.at[i + lead_time, 'delivery'] = demand_data.at[i + lead_time, 'delivery'] + reorder_qty
+
+                # add in_transit inventory to each day (i+1) through (i + LT - 1)
+                demand_data.loc[i + 1: i + lead_time, 'in_transit_il'] = demand_data.loc[i + 1: i + lead_time, 'in_transit_il'] + reorder_qty
+
+    return demand_data
+
+df2 = proj_inv_in_transitv2(demand_data)
+
+# next version should incorporate a rq_data dataframe
+
+'''
+  lead_time <- 10
+  reorder_pt <- rq_data$r # change to DOS: 8000*y
+  reorder_qty <- rq_data$q # change to DOS: 8000*y
+'''
