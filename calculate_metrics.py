@@ -51,3 +51,6 @@ columns_to_divide = ['daily_il_mean', 'daily_il_max']
 grouped_df[["days_of_supply_mean", "days_of_supply_max"]] = grouped_df[columns_to_divide].div(
     grouped_df['daily_demand_mean'], axis=0)
     '''
+
+# transpose table
+results = grouped_df.round(0).transpose()
