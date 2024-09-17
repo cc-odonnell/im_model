@@ -1,7 +1,10 @@
+# calculate summary metrics
+
+
 # from run_sim.py
-# # save data
 # demand_data.to_csv('demand_data_sim1.csv')
 
+# remove first month of data ?
 
 ########### calculate metrics
 

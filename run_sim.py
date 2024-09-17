@@ -18,14 +18,16 @@ demand_data['delivery'] = 0
 # set the first day of inventory
 demand_data.loc[demand_data.index[0], 'on_hand_il'] = 11111
 
-
+lead_time = 10
+reorder_pt = 8000 * 10
+reorder_qty = 8000 * 5
 
 
 # Pandas-style version of function with .at method
 def proj_inv_in_transitv2(demand_data):
-    lead_time = 10
-    reorder_pt = 8000 * 10
-    reorder_qty = 8000 * 5
+    lead_time = lead_time
+    reorder_pt = reorder_pt
+    reorder_qty = reorder_qty
 
     # index starts at 0, so 1 is the second row
     for i in range(1, len(demand_data)):
