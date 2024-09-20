@@ -1,8 +1,22 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import calculate_metrics
+
+# set my rq inputs
+lead_time = 10
+reorder_pt = 8000 * 10
+reorder_qty = 8000 * 5
+index = ["row1"]
+
+# turn these into a dataframe
+data_dict = {'lead_time': lead_time, 'reorder_pt': reorder_pt, 'reorder_qty':reorder_qty}
+rq_inputs = pd.DataFrame(data=data_dict, index=index)
 
 # get data from 'generate_data.py'
+#df.to_pickle('demand_data.pkl')
+df = pd.read_pickle('demand_data.pkl')
+
 # subset to 1 SKU-DC combo
 demand_data = df[(df['item_num'] == 10000) & (df['dc'] == 'A')]
 
@@ -16,18 +30,16 @@ demand_data['total_il'] = 0
 demand_data['delivery'] = 0
 
 # set the first day of inventory
-demand_data.loc[demand_data.index[0], 'on_hand_il'] = 11111
-
-lead_time = 10
-reorder_pt = 8000 * 10
-reorder_qty = 8000 * 5
+# so order triggered on day 2
+starting_value = rq_inputs.loc[rq_inputs.index[0], 'reorder_pt'] + demand_data.loc[demand_data.index[0], 'new_daily_demand'] + 10
+demand_data.loc[demand_data.index[0], 'on_hand_il'] = starting_value
 
 
 # Pandas-style version of function with .at method
-def proj_inv_in_transitv2(demand_data):
-    lead_time = lead_time
-    reorder_pt = reorder_pt
-    reorder_qty = reorder_qty
+def sim_il(demand_data, rq_inputs):
+    lead_time = rq_inputs.loc[rq_inputs.index[0], 'lead_time']
+    reorder_pt = rq_inputs.loc[rq_inputs.index[0],'reorder_pt']
+    reorder_qty = rq_inputs.loc[rq_inputs.index[0],'reorder_qty']
 
     # index starts at 0, so 1 is the second row
     for i in range(1, len(demand_data)):
@@ -52,16 +64,17 @@ def proj_inv_in_transitv2(demand_data):
                 demand_data.loc[i + 1: i + lead_time, 'in_transit_il'] = demand_data.loc[i + 1: i + lead_time,
                                                                          'in_transit_il'] + reorder_qty
 
-    return demand_data
+    demand_data['unmet_demand'] = (demand_data['new_daily_demand'] - demand_data['on_hand_il']).clip(lower=0)
+    results = calc_metrics(demand_data, reorder_qty)
+    return results, demand_data
 
+# run the sim
+test_results2 = sim_il(demand_data, rq_inputs)
+# unpack tuple
+results2, demand_data2  = test_results2
 
-demand_data = proj_inv_in_transitv2(demand_data)
-# new column
-demand_data['unmet_demand'] = (demand_data['new_daily_demand'] - demand_data['on_hand_il']).clip(lower=0)
 # save data
-demand_data.to_csv('demand_data_sim1.csv')
-
-# later version should incorporate a rq_data dataframe
+demand_data2.to_csv('demand_data_sim1.csv')
 
 # generate diagnostic plots
 
