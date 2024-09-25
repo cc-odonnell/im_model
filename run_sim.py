@@ -4,14 +4,15 @@ import matplotlib.pyplot as plt
 import calculate_metrics
 
 # set my rq inputs
-lead_time = 10
-reorder_pt = 8000 * 10
-reorder_qty = 8000 * 5
-index = ["row1"]
+# cross join for every combination of r and q
+lt = 10
+r = np.arange(10,15,1)
+q = np.arange(1,5,1)
+rq = [(lt, y, z) for y in r for z in q]
+rq_inputs = pd.DataFrame(rq, columns=['lead_time', 'reorder_pt', 'reorder_qty'])
 
-# turn these into a dataframe
-data_dict = {'lead_time': lead_time, 'reorder_pt': reorder_pt, 'reorder_qty':reorder_qty}
-rq_inputs = pd.DataFrame(data=data_dict, index=index)
+# subset for testing the simulation
+rq1 = rq_inputs.iloc[[0]]
 
 # get data from 'generate_data.py'
 #df.to_pickle('demand_data.pkl')
@@ -36,12 +37,17 @@ demand_data.loc[demand_data.index[0], 'on_hand_il'] = starting_value
 
 
 def sim_il(demand_data, rq_inputs):
+    # create empty dataframe
+    all_results = pd.DataFrame()
+
+    # loop through r and q values
     for j in range(0, len(rq_inputs)):
         lead_time = rq_inputs.loc[rq_inputs.index[j], 'lead_time']
         reorder_pt = rq_inputs.loc[rq_inputs.index[j],'reorder_pt']
         reorder_qty = rq_inputs.loc[rq_inputs.index[j],'reorder_qty']
 
-    # index starts at 0, so 1 is the second row
+    # run through the inventory sim
+    # NOTE: index starts at 0, so 1 is the second row
         for i in range(1, len(demand_data)):
 
             # calculate on-hand inventory, min floor inventory level to 0
@@ -65,29 +71,13 @@ def sim_il(demand_data, rq_inputs):
                                                                              'in_transit_il'] + reorder_qty
 
         demand_data['unmet_demand'] = (demand_data['new_daily_demand'] - demand_data['on_hand_il']).clip(lower=0)
-        results = calc_metrics(demand_data, reorder_qty)
-        return results, demand_data
+        # calculate summary statistics
+        results = calculate_metrics.calc_metrics(demand_data, reorder_qty)
+        results['iteration'] = f"lt = {lead_time}, r = {reorder_pt}, q = {reorder_qty}"
+        # append
+        all_results = pd.concat(objs=[all_results, results], ignore_index=True)
+    return all_results
+
 
 # run the sim
-test_results2 = sim_il(demand_data, rq_inputs)
-# unpack tuple
-results2, demand_data2 = test_results2
-
-# save data
-demand_data2.to_csv('demand_data_sim1.csv')
-
-# generate diagnostic plots
-
-plt.figure(figsize=(10, 6))
-
-# Plot 'on_hand_il' with red color
-plt.plot(demand_data['order_date'], demand_data['on_hand_il'], color='red', label='on_hand_il')
-
-# Plot 'new_daily_demand' with blue color
-plt.plot(demand_data['order_date'], demand_data['new_daily_demand'], color='blue', label='new_daily_demand')
-
-plt.title('R = 10, Q = 5')
-plt.legend()
-plt.show()
-
-
+results = sim_il(demand_data, rq_inputs)
