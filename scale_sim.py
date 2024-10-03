@@ -6,22 +6,25 @@ import numpy as np
 import calculate_metrics
 import prep_demand_data_for_sim
 
-def sim_il(demand_data, rq_inputs):
+def sim_il_metrics(demand_data, rq_inputs):
     # create empty dataframe
     all_results = pd.DataFrame()
 
     # loop through r and q values
     for j in range(0, len(rq_inputs)):
+        mean_daily_demand = demand_data['new_daily_demand'].mean()
+        r = rq_inputs.loc[rq_inputs.index[j], 'reorder_pt']
+        q = rq_inputs.loc[rq_inputs.index[j], 'reorder_qty']
         lead_time = rq_inputs.loc[rq_inputs.index[j], 'lead_time']
-        reorder_pt = rq_inputs.loc[rq_inputs.index[j],'reorder_pt']
-        reorder_qty = rq_inputs.loc[rq_inputs.index[j],'reorder_qty']
+        reorder_pt = r * mean_daily_demand
+        reorder_qty = q * mean_daily_demand
 
         # set starting values
-        demand_data1 = prep_demand_data_for_sim.prep_data(demand_data, reorder_pt)
+        demand_data = prep_demand_data_for_sim.prep_data(demand_data, reorder_pt)
 
         # run through the inventory sim
         # NOTE: index starts at 0, so 1 is the second row
-        for i in range(1, len(demand_data1)):
+        for i in range(1, len(demand_data)):
 
             # calculate on-hand inventory, min floor inventory level to 0
             demand_data.at[i, 'on_hand_il'] = max(0,
@@ -43,10 +46,10 @@ def sim_il(demand_data, rq_inputs):
                     demand_data.loc[i + 1: i + lead_time, 'in_transit_il'] = demand_data.loc[i + 1: i + lead_time,
                                                                              'in_transit_il'] + reorder_qty
 
-        demand_data1['unmet_demand'] = (demand_data1['new_daily_demand'] - demand_data1['on_hand_il']).clip(lower=0)
+        demand_data['unmet_demand'] = (demand_data['new_daily_demand'] - demand_data['on_hand_il']).clip(lower=0)
         # calculate summary statistics
-        results = calculate_metrics.calc_metrics(demand_data1, reorder_qty)
-        results['iteration'] = f"lt = {lead_time}, r = {reorder_pt}, q = {reorder_qty}"
+        results = calculate_metrics.calc_metrics(demand_data, reorder_qty)
+        results['iteration'] = f"lt = {lead_time}, r = {r}, q = {q}"
         # append
         all_results = pd.concat(objs=[all_results, results], ignore_index=True)
 
@@ -56,6 +59,7 @@ def sim_il(demand_data, rq_inputs):
 # test the sim
 
 # set my rq inputs (use just 1 row for testing)
+### CHANGE THIS TO DAYS OF SUPPLY !!!
 rq = {"lead_time": [10], "reorder_pt": [10], "reorder_qty": [1]}
 rq_inputs = pd.DataFrame(rq)
 
