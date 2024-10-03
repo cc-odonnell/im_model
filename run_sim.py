@@ -1,6 +1,8 @@
+# get summary stats for all values of r and q
+# demand data comes from generate_data.py
+
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 import calculate_metrics
 
 # set my rq inputs

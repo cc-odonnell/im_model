@@ -1,10 +1,6 @@
 # calculate summary metrics
 import pandas as pd
 
-# data from run_sim.py
-demand_data = pd.read_csv('demand_data_sim1.csv')
-reorder_qty = rq_inputs.loc[rq_inputs.index[0], 'reorder_qty']
-
 
 def calc_metrics(demand_data, reorder_qty):
 
@@ -38,5 +34,9 @@ def calc_metrics(demand_data, reorder_qty):
 
     return grouped_df
 
-test_results = calc_metrics(demand_data, reorder_qty)
 
+'''# test function
+sim_demand_data = pd.read_csv('demand_data_sim1.csv')
+reorder_qty = rq_inputs.loc[rq_inputs.index[0], 'reorder_qty']
+test_results = calc_metrics(sim_demand_data, reorder_qty)
+'''
