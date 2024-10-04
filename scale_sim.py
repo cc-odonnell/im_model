@@ -12,7 +12,7 @@ def sim_il_metrics(demand_data, rq_inputs):
 
     # loop through r and q values
     for j in range(0, len(rq_inputs)):
-        mean_daily_demand = demand_data['new_daily_demand'].mean()
+        mean_daily_demand = int(round(demand_data['new_daily_demand'].mean()))
         r = rq_inputs.loc[rq_inputs.index[j], 'reorder_pt']
         q = rq_inputs.loc[rq_inputs.index[j], 'reorder_qty']
         lead_time = rq_inputs.loc[rq_inputs.index[j], 'lead_time']
@@ -49,6 +49,7 @@ def sim_il_metrics(demand_data, rq_inputs):
         demand_data['unmet_demand'] = (demand_data['new_daily_demand'] - demand_data['on_hand_il']).clip(lower=0)
         # calculate summary statistics
         results = calculate_metrics.calc_metrics(demand_data, reorder_qty)
+        # TO DO: CHANGE TO SEPARATE COLUMNS !!!
         results['iteration'] = f"lt = {lead_time}, r = {r}, q = {q}"
         # append
         all_results = pd.concat(objs=[all_results, results], ignore_index=True)
@@ -59,36 +60,38 @@ def sim_il_metrics(demand_data, rq_inputs):
 # test the sim
 
 # set my rq inputs (use just 1 row for testing)
-### CHANGE THIS TO DAYS OF SUPPLY !!!
-rq = {"lead_time": [10], "reorder_pt": [10], "reorder_qty": [1]}
-rq_inputs = pd.DataFrame(rq)
+# rq = {"lead_time": [10], "reorder_pt": [10], "reorder_qty": [1]}
+# rq_inputs = pd.DataFrame(rq)
+
+lt = 10
+r = np.arange(10,15,1)
+q = np.arange(1,5,1)
+rq = [(lt, y, z) for y in r for z in q]
+rq_inputs = pd.DataFrame(rq, columns=['lead_time', 'reorder_pt', 'reorder_qty'])
+
 
 # get data from 'generate_data.py'
 df = pd.read_pickle('demand_data.pkl')
 
 # subset to 1 SKU and 1 location
-demand_data = df[(df['item_num'] == 10000) & (df['dc'] == "A")]
+#demand_data = df[(df['item_num'] == 10000) & (df['dc'] == "A")]
 
 # subset to 1 SKU, but all DC locations (A,B,C)
-# demand_data = df[(df['item_num'] == 10000)]
+demand_data = df[(df['item_num'] == 10000)]
 
-results = sim_il(demand_data, rq_inputs)
+# results = sim_il_metrics(demand_data, rq_inputs)
 
-''' now run over many item locations
+# now run over many item locations
+grouped = demand_data.groupby(['item_num', 'dc'])
 
-grouped = demand_data.groupby(['item', 'location'])
-
-# define a list to store results
-results = []
-
+# create an empty df to store results
+results = pd.DataFrame()
 
 # iterating over grouped object
 for (itemName, locationName), groupData in grouped:
-    # filter the rq_inputs for the specific item and location
-    rq_inputs_specific = rq_inputs[(rq_inputs['item'] == itemName) & (rq_inputs['location'] == locationName)]
 
-    result = sim_il(groupData, rq_inputs_specific, itemName, locationName)
-    results.append(result)
+    result = sim_il_metrics(groupData, rq_inputs)
+    results = pd.concat(objs=[results, result], ignore_index=True)
 
-# concatenate results into a final DataFrame
-final_results = pd.concat(results)
+# save dataset
+results.to_csv('factorial_dataset.csv')
