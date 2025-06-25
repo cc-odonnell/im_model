@@ -4,9 +4,6 @@ Inventory Management Statistical Modeling
 
 To develop this framework, I generated synthetic demand and lead time data, then created a simulation that modeled inventory behaviors over time. Using this simulated data, I conducted a factorial design analysis, testing various combinations of R and Q to map out the feasible solution space. This allowed me to explore how different reorder points and order quantities affected outcomes across different inventory configurations.
 
-![Data Viz](./assets/CompareRandQOutcomes.png)
-
-
 The focus of my analysis was on comparing the optimal solutions given by three common methods: cut-off thresholds, linear programming, and multi-objective optimization (Pareto Optimality).
 
 **Cut-Off Thresholds**:
